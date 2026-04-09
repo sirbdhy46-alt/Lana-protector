@@ -10,7 +10,7 @@ import {
   Routes,
 } from "discord.js";
 import { get, set, defaultSettings, type GuildSettings } from "../data/storage.js";
-import { COLORS, base, lana, rand, CUTE, SYM } from "../utils/embeds.js";
+import { COLORS, base, lana, rand, CUTE } from "../utils/embeds.js";
 import { getLanaGif } from "../utils/gifs.js";
 import {
   TEMPLATES,
@@ -384,6 +384,110 @@ export async function handleSetup(
     });
   }
 
+  // ─── QUICK CONFIG COMMANDS ─────────────────────────────────────────────────
+
+  if (cmd === "setwelcome") {
+    const channel = message.mentions.channels.first();
+    if (!channel || !channel.isTextBased())
+      return message.reply({
+        embeds: [base(COLORS.error).setDescription("❌ Mention a text channel! e.g. `!setwelcome #welcome`")],
+      });
+    const s = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+    set(gKey(message.guildId!), "data", { ...s, welcomeChannel: channel.id });
+    return message.reply({
+      embeds: [lana("🌸 Welcome Channel Set!", `Welcome messages will now appear in <#${channel.id}>`)],
+    });
+  }
+
+  if (cmd === "setleave") {
+    const channel = message.mentions.channels.first();
+    if (!channel || !channel.isTextBased())
+      return message.reply({
+        embeds: [base(COLORS.error).setDescription("❌ Mention a text channel! e.g. `!setleave #goodbye`")],
+      });
+    const s = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+    set(gKey(message.guildId!), "data", { ...s, leaveChannel: channel.id });
+    return message.reply({
+      embeds: [lana("👋 Leave Channel Set!", `Goodbye messages will now appear in <#${channel.id}>`)],
+    });
+  }
+
+  if (cmd === "setlogs") {
+    const channel = message.mentions.channels.first();
+    if (!channel || !channel.isTextBased())
+      return message.reply({
+        embeds: [base(COLORS.error).setDescription("❌ Mention a text channel! e.g. `!setlogs #mod-logs`")],
+      });
+    const s = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+    set(gKey(message.guildId!), "data", { ...s, logsChannel: channel.id });
+    return message.reply({
+      embeds: [lana("📋 Logs Channel Set!", `Moderation logs will now appear in <#${channel.id}>`)],
+    });
+  }
+
+  if (cmd === "setlevelchannel") {
+    const channel = message.mentions.channels.first();
+    if (!channel || !channel.isTextBased())
+      return message.reply({
+        embeds: [base(COLORS.error).setDescription("❌ Mention a text channel! e.g. `!setlevelchannel #levels`")],
+      });
+    const s = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+    set(gKey(message.guildId!), "data", { ...s, levelChannel: channel.id });
+    return message.reply({
+      embeds: [lana("⭐ Level Channel Set!", `Level-up notifications will now appear in <#${channel.id}>`)],
+    });
+  }
+
+  if (cmd === "setjailchannel") {
+    const channel = message.mentions.channels.first();
+    if (!channel || !channel.isTextBased())
+      return message.reply({
+        embeds: [base(COLORS.error).setDescription("❌ Mention a text channel! e.g. `!setjailchannel #jail`")],
+      });
+    const s = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+    set(gKey(message.guildId!), "data", { ...s, jailChannel: channel.id });
+    return message.reply({
+      embeds: [lana("🔒 Jail Channel Set!", `Jailed members will be notified in <#${channel.id}>`)],
+    });
+  }
+
+  if (cmd === "setprefix") {
+    const newPrefix = args[0];
+    if (!newPrefix || newPrefix.length > 3)
+      return message.reply({
+        embeds: [base(COLORS.error).setDescription("❌ Provide a prefix! e.g. `!setprefix ?` (max 3 chars)")],
+      });
+    const s = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+    set(gKey(message.guildId!), "data", { ...s, prefix: newPrefix });
+    return message.reply({
+      embeds: [lana("✅ Prefix Updated!", `Bot prefix is now **${newPrefix}** — use \`${newPrefix}help\` to see all commands!`)],
+    });
+  }
+
+  if (cmd === "settings") {
+    const s = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+    const ch = (id: string | undefined) => id ? `<#${id}>` : "❌ Not set";
+    return message.reply({
+      embeds: [
+        lana("⚙️ Server Settings", [
+          `**Prefix:** \`${s.prefix ?? "!"}\``,
+          `**Welcome Channel:** ${ch(s.welcomeChannel)}`,
+          `**Leave Channel:** ${ch(s.leaveChannel)}`,
+          `**Logs Channel:** ${ch(s.logsChannel)}`,
+          `**Level Channel:** ${ch(s.levelChannel)}`,
+          `**Jail Channel:** ${ch(s.jailChannel)}`,
+          `**Starboard Channel:** ${ch(s.starboardChannel)}`,
+          `**Starboard Min:** ${s.starboardMin ?? 3} ⭐`,
+          "",
+          "Use `!setwelcome #channel`, `!setleave #channel`, `!setlogs #channel`,",
+          "`!setlevelchannel #channel`, `!setjailchannel #channel` to configure.",
+        ].join("\n")),
+      ],
+    });
+  }
+
+  // ─── MAIN SETUP COMMAND ────────────────────────────────────────────────────
+
   if (args[0]?.toLowerCase() === "list") {
     return message.reply({
       embeds: [
@@ -397,7 +501,7 @@ export async function handleSetup(
     });
   }
 
-  const templateArg = args.length >= 2 ? args[0] : "classic";
+  const templateArg = args.length >= 2 ? args[0]! : "classic";
   const confirmArg = args.length >= 2 ? args[1] : args[0];
 
   if (confirmArg?.toLowerCase() !== "confirm") {
@@ -645,7 +749,7 @@ export async function handleSetup(
           `**Roles created:** ${rn.owner} ${rn.admin} ${rn.mod} ${rn.vip} ${rn.booster} ${rn.member} ${rn.jailed}\n` +
           `*(Your existing roles were kept!)*\n\n` +
           `**Community Mode:** ${communityOk ? "✅ Enabled" : "⚠️ Needs manual enable (Server Settings → Enable Community)"}\n` +
-          `**Onboarding:** ${onboardOk ? "✅ Configured with 3 prompts!" : communityOk ? "⚠️ Use `!onboard` to retry" : "⚠️ Enable Community mode first, then use `!onboard`"}\n\n` +
+          `**Onboarding:** ${onboardOk ? "✅ Configured with 3 prompts!" : communityOk ? "⚠️ Use \`!onboard\` to retry" : "⚠️ Enable Community mode first, then use \`!onboard\`"}\n\n` +
           `**Your channel** was preserved and moved to General ✿\n\n` +
           `Use \`!setup list\` to switch themes • \`!onboard\` to reconfigure onboarding\n\n` +
           `${cLine()}`
@@ -721,7 +825,7 @@ export async function handleOnboard(message: Message) {
             ? `Onboarding is now live! New members will see:\n\n﹒${cSym()}﹒ Why are you here? (reason prompt)\n﹒${cSym()}﹒ Pick your vibe (aesthetics)\n﹒${cSym()}﹒ Favourite Lana Era? (fan prompt)\n\nMembers complete these before joining the server! ✨`
             : communityOk
             ? "Community is enabled but onboarding setup failed. Try Server Settings → Onboarding to configure manually."
-            : "Community mode failed. You may need to:\n﹒ Enable 2FA on your account\n﹒ Set a verification level in Server Settings\n﹒ Then run `!onboard` again"
+            : "Community mode failed. You may need to:\n﹒ Enable 2FA on your account\n﹒ Set a verification level in Server Settings\n﹒ Then run \`!onboard\` again"
           ) +
           `\n\n${cLine()}`
         )
