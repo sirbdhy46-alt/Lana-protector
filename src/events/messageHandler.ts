@@ -13,9 +13,15 @@ const MOD_COMMANDS = new Set([
   "ban", "kick", "mute", "unmute", "timeout", "warn", "warnings",
   "clearwarns", "clear", "purge", "slowmode", "lock", "unlock",
   "nick", "jail", "unjail", "nuke",
+  "hardban", "hardfuck",
 ]);
 
-const SETUP_COMMANDS = new Set(["setup", "onboard"]);
+const SETUP_COMMANDS = new Set([
+  "setup", "onboard",
+  "setwelcome", "setleave", "setlogs",
+  "setlevelchannel", "setjailchannel", "setprefix",
+  "settings",
+]);
 
 const UTILITY_COMMANDS = new Set([
   "help", "snipe", "editsnipe", "serverinfo", "userinfo", "avatar",
@@ -25,6 +31,7 @@ const UTILITY_COMMANDS = new Set([
 const FUN_COMMANDS = new Set([
   "hug", "slap", "kiss", "dance", "fight", "8ball", "coinflip",
   "dice", "rps", "quote", "ship", "poll", "roast", "compliment",
+  "pat", "poke", "cry",
 ]);
 
 const ECONOMY_COMMANDS = new Set([
