@@ -4,7 +4,7 @@ import {
   set,
   update,
   defaultWarnings,
-  type UserWarnings,
+  type UserWarnings,]
   defaultSettings,
   type GuildSettings,
 } from "../data/storage.js";
@@ -24,8 +24,8 @@ async function sendMod(
 ) {
   const embed = base(color)
     .setTitle(`${rand(ANIMATED)} ${title}`)
-    .setDescription(desc)
-    .setImage(gif);
+    .setDescription(desc);
+  if (gif) embed.setImage(gif);
   await message.channel.send({ embeds: [embed] });
 }
 
@@ -53,6 +53,16 @@ function logAction(
   (ch as any).send({ embeds: [embed] }).catch(() => {});
 }
 
+function checkRoleHierarchy(message: Message, target: any): string | null {
+  const botMember = message.guild?.members.me;
+  if (!botMember) return "❌ I can't find myself in this server!";
+  if (target.id === message.guild?.ownerId)
+    return "❌ I can't perform actions on the server owner!";
+  if (target.roles.highest.position >= botMember.roles.highest.position)
+    return "❌ I can't do that — their role is equal to or higher than mine! Move my role above theirs in Server Settings → Roles.";
+  return null;
+}
+
 export async function handleModeration(
   cmd: string,
   message: Message,
@@ -67,11 +77,18 @@ export async function handleModeration(
         return message.reply({
           embeds: [base(COLORS.error).setDescription("❌ You need **Ban Members** permission!")],
         });
+      if (!message.guild.members.me?.permissions.has(PermissionFlagsBits.BanMembers))
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ I don't have **Ban Members** permission! Please give me that role permission.")],
+        });
       const target = message.mentions.members?.first();
       if (!target)
         return message.reply({
           embeds: [base(COLORS.error).setDescription("❌ Mention a member to ban!")],
         });
+      const hierErr = checkRoleHierarchy(message, target);
+      if (hierErr)
+        return message.reply({ embeds: [base(COLORS.error).setDescription(hierErr)] });
       const reason = args.slice(1).join(" ") || "No reason provided";
       try {
         await target.ban({ reason });
@@ -82,9 +99,9 @@ export async function handleModeration(
           getGif("ban")
         );
         logAction(message, "BAN", target.user.tag, reason);
-      } catch {
+      } catch (e: any) {
         message.reply({
-          embeds: [base(COLORS.error).setDescription("❌ Could not ban that member.")],
+          embeds: [base(COLORS.error).setDescription(`❌ Could not ban that member.\n> ${e?.message ?? "Unknown error"}`)],
         });
       }
       break;
@@ -95,11 +112,18 @@ export async function handleModeration(
         return message.reply({
           embeds: [base(COLORS.error).setDescription("❌ You need **Kick Members** permission!")],
         });
+      if (!message.guild.members.me?.permissions.has(PermissionFlagsBits.KickMembers))
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ I don't have **Kick Members** permission! Please give me that role permission.")],
+        });
       const target = message.mentions.members?.first();
       if (!target)
         return message.reply({
           embeds: [base(COLORS.error).setDescription("❌ Mention a member to kick!")],
         });
+      const hierErr = checkRoleHierarchy(message, target);
+      if (hierErr)
+        return message.reply({ embeds: [base(COLORS.error).setDescription(hierErr)] });
       const reason = args.slice(1).join(" ") || "No reason provided";
       try {
         await target.kick(reason);
@@ -110,9 +134,9 @@ export async function handleModeration(
           getGif("kick")
         );
         logAction(message, "KICK", target.user.tag, reason);
-      } catch {
+      } catch (e: any) {
         message.reply({
-          embeds: [base(COLORS.error).setDescription("❌ Could not kick that member.")],
+          embeds: [base(COLORS.error).setDescription(`❌ Could not kick that member.\n> ${e?.message ?? "Unknown error"}`)],
         });
       }
       break;
@@ -128,20 +152,29 @@ export async function handleModeration(
         return message.reply({
           embeds: [base(COLORS.error).setDescription("❌ Mention a member to mute!")],
         });
+      const hierErr = checkRoleHierarchy(message, target);
+      if (hierErr)
+        return message.reply({ embeds: [base(COLORS.error).setDescription(hierErr)] });
       const reason = args.slice(1).join(" ") || "No reason";
+      const muteErr = await target.timeout(600_000, reason).catch((e: any) => e);
+      if (muteErr instanceof Error) {
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription(`❌ Could not mute that member.\n> ${muteErr.message}`)],
+        });
+      }
       update<UserWarnings>(
         `warnings:${message.guildId}`,
         target.id,
         (w) => ({ ...w, muted: true }),
         defaultWarnings
       );
-      await target.timeout(600_000, reason).catch(() => {});
       await sendMod(
         message,
         `🔇 Muted — ${target.user.username}`,
         `> **User:** ${target.user.tag}\n> **Reason:** ${reason}\n> **Duration:** 10 minutes`,
         getGif("mute")
       );
+      logAction(message, "MUTE", target.user.tag, reason);
       break;
     }
 
@@ -178,15 +211,24 @@ export async function handleModeration(
         return message.reply({
           embeds: [base(COLORS.error).setDescription("❌ Mention a member!")],
         });
+      const hierErr = checkRoleHierarchy(message, target);
+      if (hierErr)
+        return message.reply({ embeds: [base(COLORS.error).setDescription(hierErr)] });
       const mins = parseInt(args[1] ?? "5", 10) || 5;
       const reason = args.slice(2).join(" ") || "No reason";
-      await target.timeout(mins * 60_000, reason).catch(() => {});
+      const timeoutErr = await target.timeout(mins * 60_000, reason).catch((e: any) => e);
+      if (timeoutErr instanceof Error) {
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription(`❌ Could not timeout that member.\n> ${timeoutErr.message}`)],
+        });
+      }
       await sendMod(
         message,
-        `⏱️ Timeout — ${target.user.username}`,
-        `> **Duration:** ${mins} min\n> **Reason:** ${reason}`,
+        `⏱️ Timed Out — ${target.user.username}`,
+        `> **User:** ${target.user.tag}\n> **Duration:** ${mins} min\n> **Reason:** ${reason}\n> **Mod:** ${message.author.tag}`,
         getGif("timeout")
       );
+      logAction(message, "TIMEOUT", target.user.tag, `${mins} min — ${reason}`);
       break;
     }
 
@@ -216,10 +258,11 @@ export async function handleModeration(
       await sendMod(
         message,
         `⚠️ Warned — ${target.username}`,
-        `> **Reason:** ${reason}\n> **Total Warns:** ${warns.warnings.length}`,
+        `> **User:** ${target.tag}\n> **Reason:** ${reason}\n> **Total Warns:** ${warns.warnings.length}\n> **Mod:** ${message.author.tag}`,
         getGif("warn"),
         COLORS.warn
       );
+      logAction(message, "WARN", target.tag, reason);
       break;
     }
 
@@ -349,6 +392,10 @@ export async function handleModeration(
         return message.reply({
           embeds: [base(COLORS.error).setDescription("❌ You need **Manage Roles** permission!")],
         });
+      if (!message.guild.members.me?.permissions.has(PermissionFlagsBits.ManageRoles))
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ I don't have **Manage Roles** permission!")],
+        });
       const target = message.mentions.members?.first();
       if (!target)
         return message.reply({
@@ -363,9 +410,14 @@ export async function handleModeration(
       const jailRole = message.guild.roles.cache.get(settings.jailedRole);
       if (!jailRole)
         return message.reply({
-          embeds: [base(COLORS.error).setDescription("❌ Jailed role not found!")],
+          embeds: [base(COLORS.error).setDescription("❌ Jailed role not found in this server!")],
         });
-      await target.roles.add(jailRole).catch(() => {});
+      const jailErr = await target.roles.add(jailRole).catch((e: any) => e);
+      if (jailErr instanceof Error) {
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription(`❌ Could not jail member.\n> ${jailErr.message}\n> Make sure my role is above the Jailed role.`)],
+        });
+      }
       update<UserWarnings>(
         `warnings:${message.guildId}`,
         target.id,
@@ -378,6 +430,7 @@ export async function handleModeration(
         `> **User:** ${target.user.tag}\n> **Reason:** ${reason}\n> **Mod:** ${message.author.tag}`,
         getGif("jail")
       );
+      logAction(message, "JAIL", target.user.tag, reason);
       if (settings.jailChannel) {
         const jailCh = message.guild.channels.cache.get(settings.jailChannel);
         if (jailCh?.isTextBased())
@@ -420,6 +473,79 @@ export async function handleModeration(
       await message.reply({
         embeds: [aesthetic("🔓 Released", `${target.user.tag} has been released from jail!`, COLORS.success)],
       });
+      logAction(message, "UNJAIL", target.user.tag, "Released from jail");
+      break;
+    }
+
+    case "hardban": {
+      if (!hasPerms(PermissionFlagsBits.BanMembers))
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ You need **Ban Members** permission!")],
+        });
+      if (!message.guild.members.me?.permissions.has(PermissionFlagsBits.BanMembers))
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ I don't have **Ban Members** permission!")],
+        });
+      const target = message.mentions.members?.first();
+      if (!target)
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ Mention a member to hardban!")],
+        });
+      const hierErr = checkRoleHierarchy(message, target);
+      if (hierErr)
+        return message.reply({ embeds: [base(COLORS.error).setDescription(hierErr)] });
+      const reason = args.slice(1).join(" ") || "No reason provided";
+      try {
+        await target.ban({ reason, deleteMessageSeconds: 604800 });
+        await sendMod(
+          message,
+          `💥 HARD BANNED — ${target.user.username}`,
+          `> **User:** ${target.user.tag}\n> **Reason:** ${reason}\n> **Mod:** ${message.author.tag}\n> **Messages:** Last 7 days deleted 🗑️`,
+          getGif("hardban"),
+          0xff0000 as any
+        );
+        logAction(message, "HARDBAN", target.user.tag, reason);
+      } catch (e: any) {
+        message.reply({
+          embeds: [base(COLORS.error).setDescription(`❌ Could not hardban that member.\n> ${e?.message ?? "Unknown error"}`)],
+        });
+      }
+      break;
+    }
+
+    case "hardfuck": {
+      if (!hasPerms(PermissionFlagsBits.BanMembers))
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ You need **Ban Members** permission!")],
+        });
+      if (!message.guild.members.me?.permissions.has(PermissionFlagsBits.BanMembers))
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ I don't have **Ban Members** permission!")],
+        });
+      const target = message.mentions.members?.first();
+      if (!target)
+        return message.reply({
+          embeds: [base(COLORS.error).setDescription("❌ Mention a member!")],
+        });
+      const hierErr = checkRoleHierarchy(message, target);
+      if (hierErr)
+        return message.reply({ embeds: [base(COLORS.error).setDescription(hierErr)] });
+      const reason = args.slice(1).join(" ") || "No reason provided";
+      try {
+        await target.ban({ reason, deleteMessageSeconds: 604800 });
+        await sendMod(
+          message,
+          `☠️ HARDFUCKED — ${target.user.username}`,
+          `> **User:** ${target.user.tag}\n> **Reason:** ${reason}\n> **Mod:** ${message.author.tag}\n> **Status:** Obliterated 💀 Messages nuked 🗑️`,
+          getGif("hardfuck"),
+          0x8b0000 as any
+        );
+        logAction(message, "HARDFUCK", target.user.tag, reason);
+      } catch (e: any) {
+        message.reply({
+          embeds: [base(COLORS.error).setDescription(`❌ Could not hardfuck that member.\n> ${e?.message ?? "Unknown error"}`)],
+        });
+      }
       break;
     }
 
@@ -432,10 +558,12 @@ export async function handleModeration(
       const clone = await ch.clone().catch(() => null);
       await ch.delete().catch(() => {});
       if (clone) {
-        const m = await clone.send({
-          embeds: [aesthetic("💥 Channel Nuked!", "This channel has been nuked!", COLORS.moderation)
-            .setImage(getGif("nuke"))],
-        });
+        await clone.send({
+          embeds: [
+            aesthetic("💥 Channel Nuked!", "This channel has been nuked and recreated!", COLORS.moderation)
+              .setImage(getGif("nuke")),
+          ],
+        }).catch(() => {});
       }
       break;
     }
