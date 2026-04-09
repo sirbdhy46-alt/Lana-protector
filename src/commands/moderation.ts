@@ -4,7 +4,7 @@ import {
   set,
   update,
   defaultWarnings,
-  type UserWarnings,]
+  type UserWarnings,
   defaultSettings,
   type GuildSettings,
 } from "../data/storage.js";
