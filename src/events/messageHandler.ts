@@ -32,7 +32,7 @@ const ECONOMY_COMMANDS = new Set([
   "deposit", "dep", "withdraw", "with", "shop", "buy",
 ]);
 
-const LEVELING_COMMANDS = new Set(["rank", "level", "levels"]);
+const LEVELING_COMMANDS = new Set(["rank", "level", "levels", "leaderboard", "lb", "setlevel"]);
 
 const GIVEAWAY_COMMANDS = new Set(["gstart", "gend", "greroll"]);
 
