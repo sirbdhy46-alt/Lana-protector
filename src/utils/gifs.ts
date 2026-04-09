@@ -64,15 +64,78 @@ export const GIFS: Record<string, string[]> = {
     "https://media.tenor.com/pItLfmIm3IMAAAAC/robbing.gif",
     "https://media.tenor.com/AZO3LfX0f04AAAAC/robbery-robbing.gif",
   ],
-  welcome: [
-    "https://media.tenor.com/7PdUaFKT7TUAAAAC/welcome-hello.gif",
-    "https://media.tenor.com/OEGkFnMnAXcAAAAC/welcome.gif",
-    "https://media.tenor.com/Fy3XhWIBnGIAAAAC/hello-welcome.gif",
-  ],
-  aesthetic: [
-    "https://media.tenor.com/placeholder1.gif",
-  ],
 };
+
+export const WELCOME_GIFS = [
+  // Sparkle & glitter
+  "https://media.tenor.com/nEpCECMUv_UAAAAC/glitter-sparkle.gif",
+  "https://media.tenor.com/H_BqKYuHe4MAAAAC/sparkle-stars.gif",
+  "https://media.tenor.com/uiRFScbmpUEAAAAC/sparkles-glitter.gif",
+  "https://media.tenor.com/8mFyTbKe3DAAAAAC/sparkle-rainbow.gif",
+  // Party & celebration
+  "https://media.tenor.com/wj3G0HnMgesAAAAC/party-celebrate.gif",
+  "https://media.tenor.com/VgcH3GNVEusAAAAC/confetti-celebrate.gif",
+  "https://media.tenor.com/q1ZBxCz4i8MAAAAC/party-confetti.gif",
+  "https://media.tenor.com/Yp_7vFxRQiIAAAAC/celebration-party.gif",
+  "https://media.tenor.com/4GFfHRMRrvcAAAAC/celebrate-confetti.gif",
+  // Aesthetic & dreamy
+  "https://media.tenor.com/R4JVWZ9aVhYAAAAC/aesthetic-dreamy.gif",
+  "https://media.tenor.com/b5fWCvF1K9AAAAAC/aesthetic-pink.gif",
+  "https://media.tenor.com/LvXiIgLm0UYAAAAC/aesthetic-flowers.gif",
+  "https://media.tenor.com/9vZSo2F3dUoAAAAC/pink-aesthetic.gif",
+  "https://media.tenor.com/IfMSQI5YXTIAAAAC/aesthetic-sky.gif",
+  // Cute & kawaii
+  "https://media.tenor.com/EopJSepHCCsAAAAC/cute-kawaii.gif",
+  "https://media.tenor.com/oSiZfX7OFoMAAAAC/cute-bunny.gif",
+  "https://media.tenor.com/vBrNT7Jqhd4AAAAC/anime-cute.gif",
+  "https://media.tenor.com/oBP-g0HJGXIAAAAC/kawaii-cute.gif",
+  "https://media.tenor.com/6t3JhKJ3GNYAAAAC/cute-cat.gif",
+  // Flowers & nature
+  "https://media.tenor.com/OlNsHJfNg4YAAAAC/flowers-blooming.gif",
+  "https://media.tenor.com/ZzEq5jV2gBYAAAAC/cherry-blossom.gif",
+  "https://media.tenor.com/Zv2ZVrX0N8QAAAAC/flower-bloom.gif",
+  "https://media.tenor.com/wFfbFSHNj8IAAAAC/roses-flowers.gif",
+  // Stars & moon
+  "https://media.tenor.com/JMpzSH1k38MAAAAC/stars-night.gif",
+  "https://media.tenor.com/F7avU-7PQHQAAAAC/moon-stars.gif",
+  "https://media.tenor.com/kMXIyKyULLIAAAAC/shooting-star.gif",
+  "https://media.tenor.com/VPGS6JdF1q0AAAAC/stars-galaxy.gif",
+  // Lana vibes
+  "https://media.tenor.com/MiMJrP-V5l0AAAAC/lana-del-rey-blue.gif",
+  "https://media.tenor.com/vx1WnpWq8ZUAAAAC/lana-del-rey.gif",
+  "https://media.tenor.com/WkJkwz0ADPQAAAAC/lana-del-rey-sad.gif",
+  "https://media.tenor.com/WXVqDYNjN18AAAAC/lana-del-rey-ride.gif",
+  "https://media.tenor.com/8kSMpZ8yDW0AAAAC/lana-del-rey-summertime-sadness.gif",
+  // Rainbow & colorful
+  "https://media.tenor.com/WJGR0kRkJpgAAAAC/rainbow-colorful.gif",
+  "https://media.tenor.com/VEb2T5v-1GMAAAAC/colorful-rainbow.gif",
+  "https://media.tenor.com/VJVFz5JVARYAAAAC/neon-lights.gif",
+  // Butterflies
+  "https://media.tenor.com/bGG0iGzLWkMAAAAC/butterfly-butterflies.gif",
+  "https://media.tenor.com/nG2MLb-GqgMAAAAC/butterflies-butterfly.gif",
+  // Hearts & love
+  "https://media.tenor.com/B6XrKKaT2IoAAAAC/hearts-love.gif",
+  "https://media.tenor.com/eRPmfXVVSW0AAAAC/pink-hearts.gif",
+  "https://media.tenor.com/Xf_nnfgCwuIAAAAC/hearts-heart.gif",
+];
+
+export const WELCOME_MESSAGES = [
+  "omg you actually came 🌸",
+  "a new soul has entered the vibe ✨",
+  "the angels are singing rn 💜",
+  "paradise just got better 🌺",
+  "lana would be so proud rn 🎶",
+  "born to be here 🌙",
+  "welcome to the honeymoon phase bb 🌸",
+  "summertime sadness? more like summertime GLAD 🌊",
+  "you belong here, we just know it 💫",
+  "the moon said you were coming ✨",
+  "sadcore girlies rise for the new member 🌹",
+  "the vibe detected someone iconic 🎵",
+  "ultraviolet welcome to you bb 💜",
+  "you're exactly what this server needed 🌸",
+  "the blue banisters rolled out just for you 💙",
+];
 
 export const LANA_GIFS = [
   "https://media.tenor.com/MiMJrP-V5l0AAAAC/lana-del-rey-blue.gif",
@@ -90,4 +153,12 @@ export function getGif(type: string): string {
 
 export function getLanaGif(): string {
   return LANA_GIFS[Math.floor(Math.random() * LANA_GIFS.length)];
+}
+
+export function getWelcomeGif(): string {
+  return WELCOME_GIFS[Math.floor(Math.random() * WELCOME_GIFS.length)];
+}
+
+export function getWelcomeMessage(): string {
+  return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
 }
