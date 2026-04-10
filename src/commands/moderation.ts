@@ -555,9 +555,21 @@ export async function handleModeration(cmd: string, message: Message, args: stri
           return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Could not create the Jailed role. Give me **Manage Roles** permission!")] });
         settings = { ...settings, jailedRole: jailRole.id };
         set(gKey(message.guildId!), "data", settings);
+        // Deny ViewChannel on ALL channels for the new jail role
+        for (const [, ch] of message.guild.channels.cache) {
+          if (ch.type === ChannelType.GuildCategory || ch.isTextBased() || ch.isVoiceBased()) {
+            await (ch as any).permissionOverwrites.edit(jailRole.id, { ViewChannel: false, SendMessages: false }).catch(() => {});
+          }
+        }
       } else if (settings.jailedRole !== jailRole.id) {
         settings = { ...settings, jailedRole: jailRole.id };
         set(gKey(message.guildId!), "data", settings);
+        // Role existed but wasn't tracked — apply overwrites now
+        for (const [, ch] of message.guild.channels.cache) {
+          if (ch.type === ChannelType.GuildCategory || ch.isTextBased() || ch.isVoiceBased()) {
+            await (ch as any).permissionOverwrites.edit(jailRole.id, { ViewChannel: false, SendMessages: false }).catch(() => {});
+          }
+        }
       }
 
       const reason = args.slice(1).join(" ") || "No reason provided";
