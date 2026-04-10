@@ -539,10 +539,26 @@ export async function handleModeration(cmd: string, message: Message, args: stri
       const hierErr = checkRoleHierarchy(message, target);
       if (hierErr) return message.reply({ embeds: [base(COLORS.error).setDescription(hierErr)] });
 
-      const settings = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
-      const jailRole = settings.jailedRole ? message.guild.roles.cache.get(settings.jailedRole) : null;
-      if (!jailRole)
-        return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Jail system not set up!\n> Run `!jailsetup` to auto-configure everything.")] });
+      let settings = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
+
+      // Auto-create jail role if missing — no setup needed
+      let jailRole = settings.jailedRole ? message.guild.roles.cache.get(settings.jailedRole) : null;
+      jailRole = jailRole ?? message.guild.roles.cache.find(r => r.name === "🔒 Jailed") ?? null;
+      if (!jailRole) {
+        jailRole = await message.guild.roles.create({
+          name: "🔒 Jailed",
+          color: 0x7f8c8d,
+          permissions: [],
+          reason: "Auto-created by jail command",
+        }).catch(() => null);
+        if (!jailRole)
+          return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Could not create the Jailed role. Give me **Manage Roles** permission!")] });
+        settings = { ...settings, jailedRole: jailRole.id };
+        set(gKey(message.guildId!), "data", settings);
+      } else if (settings.jailedRole !== jailRole.id) {
+        settings = { ...settings, jailedRole: jailRole.id };
+        set(gKey(message.guildId!), "data", settings);
+      }
 
       const reason = args.slice(1).join(" ") || "No reason provided";
       const savedRoles = target.roles.cache.filter(r => r.id !== message.guild!.id && r.id !== jailRole.id).map(r => r.id);
