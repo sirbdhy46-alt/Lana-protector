@@ -7,6 +7,7 @@ import { handleEconomy } from "../commands/economy.js";
 import { handleLeveling, handleXp } from "../commands/leveling.js";
 import { handleGiveaway } from "../commands/giveaway.js";
 import { handleExtras, handleAfkCheck, handleStarboard } from "../commands/extras.js";
+import { handleSelfRoles, registerSelfRoleReactions } from "../commands/selfroles.js";
 import { get, defaultSettings, type GuildSettings } from "../data/storage.js";
 
 const MOD_COMMANDS = new Set([
@@ -43,6 +44,8 @@ const LEVELING_COMMANDS = new Set(["rank", "level", "levels", "leaderboard", "lb
 
 const GIVEAWAY_COMMANDS = new Set(["gstart", "gend", "greroll"]);
 
+const SELFROLE_COMMANDS = new Set(["selfrole", "setrolespanel", "refreshroles"]);
+
 const EXTRAS_COMMANDS = new Set([
   "afk", "remind", "reminder",
   "ticket",
@@ -64,6 +67,8 @@ const EXTRAS_COMMANDS = new Set([
 const LEADERBOARD_COMMANDS = new Set(["leaderboard", "lb"]);
 
 export function registerMessageHandlers(client: Client) {
+  registerSelfRoleReactions(client);
+
   client.on(Events.MessageCreate, async (message: Message) => {
     if (message.author.bot || !message.guild) return;
 
@@ -101,6 +106,8 @@ export function registerMessageHandlers(client: Client) {
         await handleEconomy(cmd, message, args);
       } else if (GIVEAWAY_COMMANDS.has(cmd)) {
         await handleGiveaway(cmd, message, args);
+      } else if (SELFROLE_COMMANDS.has(cmd)) {
+        await handleSelfRoles(cmd, message, args);
       } else if (EXTRAS_COMMANDS.has(cmd)) {
         await handleExtras(cmd, message, args);
       }
