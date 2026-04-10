@@ -8,6 +8,9 @@ import {
   type Guild,
   REST,
   Routes,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } from "discord.js";
 import { get, set, defaultSettings, type GuildSettings } from "../data/storage.js";
 import { COLORS, base, lana, rand, CUTE } from "../utils/embeds.js";
@@ -18,6 +21,8 @@ import {
   templateListEmbed,
   type ServerTemplate,
 } from "../data/templates.js";
+import { postSelfRolePanel, type SelfRoleEntry, type SelfRolePanel } from "./selfroles.js";
+import { postLiveLeaderboard } from "./leveling.js";
 
 function gKey(guildId: string) {
   return `settings:${guildId}`;
@@ -370,6 +375,104 @@ async function postChannelMessages(
   }
 }
 
+// ─── ROLE SELECTOR ROLES ─────────────────────────────────────────────────────
+
+const SELECTOR_ROLES: { name: string; color: number }[] = [
+  { name: "18+", color: 0xe74c3c },
+  { name: "18-", color: 0x3498db },
+  { name: "Single", color: 0xff6b9d },
+  { name: "Taken", color: 0xe91e8c },
+  { name: "Mingling", color: 0xf39c12 },
+  { name: "It's Complicated", color: 0x9b59b6 },
+  { name: "Yapping", color: 0x1abc9c },
+  { name: "Jamming", color: 0xe74c3c },
+  { name: "Gaming", color: 0x2ecc71 },
+  { name: "Creating", color: 0xe67e22 },
+  { name: "Watching", color: 0x3498db },
+  { name: "FPS Gamer", color: 0xe74c3c },
+  { name: "RPG Gamer", color: 0x9b59b6 },
+  { name: "Horror Gamer", color: 0x2c3e50 },
+  { name: "Sports Gamer", color: 0x27ae60 },
+  { name: "Non-Gamer", color: 0x7f8c8d },
+  { name: "Dark Academia", color: 0x2c3e50 },
+  { name: "Soft Girl", color: 0xff9eb5 },
+  { name: "Aesthetic", color: 0xc39bd3 },
+  { name: "Chaotic", color: 0xf39c12 },
+  { name: "Lana Era", color: 0x8e44ad },
+];
+
+async function createSelectorRoles(guild: Guild): Promise<Record<string, string>> {
+  const map: Record<string, string> = {};
+  for (const r of SELECTOR_ROLES) {
+    const existing = guild.roles.cache.find(gr => gr.name === r.name);
+    if (existing) {
+      map[r.name] = existing.id;
+    } else {
+      const created = await guild.roles.create({ name: r.name, color: r.color, hoist: false, mentionable: false }).catch(() => null);
+      if (created) map[r.name] = created.id;
+    }
+    await new Promise(res => setTimeout(res, 150));
+  }
+  return map;
+}
+
+async function postRolesPanels(
+  rolesChannel: TextChannel,
+  selectorRoleMap: Record<string, string>,
+  guild: Guild,
+  t: ServerTemplate
+) {
+  const footer = `${rand(CUTE)} lana del dey bot ✿ ${t.emoji}`;
+
+  const selfRoleEntries: SelfRoleEntry[] = [
+    { emoji: "🌹", label: "Lana Fan", roleId: selectorRoleMap["Lana Era"] ?? "", description: "I live for Lana" },
+    { emoji: "✨", label: "Aesthetic", roleId: selectorRoleMap["Aesthetic"] ?? "", description: "Soft and dreamy" },
+    { emoji: "🖤", label: "Dark Academia", roleId: selectorRoleMap["Dark Academia"] ?? "", description: "Moody and poetic" },
+    { emoji: "⚡", label: "Chaotic", roleId: selectorRoleMap["Chaotic"] ?? "", description: "I just vibe" },
+    { emoji: "🎮", label: "Gamer", roleId: selectorRoleMap["Gaming"] ?? "", description: "Love to game" },
+  ].filter(e => e.roleId);
+
+  const panel: SelfRolePanel = {
+    title: `${t.emoji} React for Roles!`,
+    description: `${cLine()}\n\nReact to get a vibe role! ${t.emoji}\n\n${selfRoleEntries.map(e => `${e.emoji} → **${e.label}**`).join("\n")}\n\n${cLine()}`,
+    entries: selfRoleEntries,
+    color: t.primaryColor,
+  };
+
+  if (selfRoleEntries.length > 0) {
+    await postSelfRolePanel(rolesChannel, guild.id, panel).catch(() => {});
+  }
+
+  await rolesChannel.send({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(t.primaryColor)
+        .setTitle(`${t.emoji} Get Your Full Role Set!`)
+        .setDescription(
+          `${cLine()}\n\n` +
+          `Click the button below to go through our **5-page role selector**!\n\n` +
+          `﹒${cSym()}﹒ 🎂 Age verification\n` +
+          `﹒${cSym()}﹒ 💕 Relationship status\n` +
+          `﹒${cSym()}﹒ 🎯 Your hobbies\n` +
+          `﹒${cSym()}﹒ 🎮 Gamer type\n` +
+          `﹒${cSym()}﹒ ✨ Aesthetic vibe\n\n` +
+          `Or type \`!roles\` in bot-commands anytime!\n\n` +
+          `${cLine()}`
+        )
+        .setFooter({ text: footer })
+        .setTimestamp(),
+    ],
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId("open_role_selector")
+          .setLabel("✨ Get My Roles!")
+          .setStyle(ButtonStyle.Primary)
+      ),
+    ],
+  }).catch(() => {});
+}
+
 export async function handleSetup(
   cmd: string,
   message: Message,
@@ -518,6 +621,9 @@ export async function handleSetup(
             `﹒🎭 **Keep all existing roles** — new aesthetic roles will be added\n` +
             `﹒${t.emoji} Create **${t.name}** themed channels\n` +
             `﹒📜 Auto-post rules, info, welcome, and help messages\n` +
+            `﹒🎭 Create **21 role-selector roles** (age, vibe, hobby, game, relationship)\n` +
+            `﹒🌸 Post **self-roles panel** + **role selector button** in #roles\n` +
+            `﹒⭐ Post **live leaderboard** in #general (auto-updates every 5 min!)\n` +
             `﹒🌐 Enable Discord Community mode\n` +
             `﹒✨ Set up onboarding, starboard & tickets\n\n` +
             `**Template vibe:** *${t.description}*\n\n` +
@@ -556,7 +662,8 @@ export async function handleSetup(
       ],
     }).catch(() => {});
 
-  await editProgress("Step 1/6 — Deleting old channels...", "Removing all channels except this one...");
+  // ── Step 1 ──
+  await editProgress("Step 1/9 — Deleting old channels...", "Removing all channels except this one...");
 
   const allChannels = [...guild.channels.cache.values()].filter(
     (ch) => ch.id !== commandChannelId
@@ -566,7 +673,8 @@ export async function handleSetup(
     await new Promise((r) => setTimeout(r, 250));
   }
 
-  await editProgress("Step 2/6 — Creating roles...", "Adding new aesthetic roles (existing roles are kept!) ✿");
+  // ── Step 2 ──
+  await editProgress("Step 2/9 — Creating roles...", "Adding new aesthetic roles (existing roles are kept!) ✿");
 
   const rn = template.roleNames;
   const rc = template.roleColors;
@@ -579,7 +687,8 @@ export async function handleSetup(
   const memberRole = await guild.roles.create({ name: rn.member, color: rc.member, hoist: false, mentionable: false }).catch(() => null);
   const jailedRole = await guild.roles.create({ name: rn.jailed, color: rc.jailed, hoist: false, mentionable: false, permissions: [] }).catch(() => null);
 
-  await editProgress("Step 3/6 — Creating channels...", "Building aesthetic channel structure ✨");
+  // ── Step 3 ──
+  await editProgress("Step 3/9 — Creating channels...", "Building aesthetic channel structure ✨");
 
   const s = template.catSymbols;
   const p = template.channelPrefix;
@@ -652,7 +761,8 @@ export async function handleSetup(
     topic: "Jailed members go here.",
   }).catch(() => null);
 
-  await editProgress("Step 4/6 — Moving your channel...", "Putting the command channel in the right place ✿");
+  // ── Step 4 ──
+  await editProgress("Step 4/9 — Moving your channel...", "Putting the command channel in the right place ✿");
 
   const commandChannel = guild.channels.cache.get(commandChannelId);
   if (commandChannel && catChat) {
@@ -660,7 +770,8 @@ export async function handleSetup(
     await (commandChannel as TextChannel).setName(`${p}🤖${p}setup-here`).catch(() => {});
   }
 
-  await editProgress("Step 5/6 — Saving settings & posting messages...", "Saving IDs and auto-posting channel content...");
+  // ── Step 5 ──
+  await editProgress("Step 5/9 — Saving settings & posting messages...", "Saving IDs and auto-posting channel content...");
 
   const settings: GuildSettings = {
     prefix: "!",
@@ -697,7 +808,27 @@ export async function handleSetup(
     template
   );
 
-  await editProgress("Step 6/6 — Enabling Community & Onboarding...", "Enabling Community mode and setting up Discord onboarding...");
+  // ── Step 6 ──
+  await editProgress("Step 6/9 — Creating role-selector roles...", "Auto-creating 21 assignable roles (age, relationship, hobby, game, vibe) ✨");
+
+  const selectorRoleMap = await createSelectorRoles(guild);
+
+  // ── Step 7 ──
+  await editProgress("Step 7/9 — Posting roles panels...", "Setting up reaction self-roles panel + role selector button in #roles ✿");
+
+  if (rolesChannel) {
+    await postRolesPanels(rolesChannel as TextChannel, selectorRoleMap, guild, template);
+  }
+
+  // ── Step 8 ──
+  await editProgress("Step 8/9 — Posting live leaderboard...", "Setting up the live leaderboard in #general (auto-updates every 5 min!) ⭐");
+
+  if (generalChannel) {
+    await postLiveLeaderboard(generalChannel as TextChannel, guild.id).catch(() => {});
+  }
+
+  // ── Step 9 ──
+  await editProgress("Step 9/9 — Enabling Community & Onboarding...", "Enabling Community mode and setting up Discord onboarding...");
 
   const token = process.env["DISCORD_TOKEN"]!;
   const communityOk = await enableCommunity(
@@ -748,6 +879,9 @@ export async function handleSetup(
           `﹒${cSym()}﹒ Jail, Mod Logs, Message Logs (staff only)\n\n` +
           `**Roles created:** ${rn.owner} ${rn.admin} ${rn.mod} ${rn.vip} ${rn.booster} ${rn.member} ${rn.jailed}\n` +
           `*(Your existing roles were kept!)*\n\n` +
+          `**Role selector roles:** ${Object.keys(selectorRoleMap).length}/21 created ✅\n\n` +
+          `**Self-roles panel:** ${rolesChannel ? "✅ Posted in #roles" : "⚠️ Channel not found"}\n` +
+          `**Live leaderboard:** ${generalChannel ? "✅ Posted in #general (updates every 5 min!)" : "⚠️ Channel not found"}\n\n` +
           `**Community Mode:** ${communityOk ? "✅ Enabled" : "⚠️ Needs manual enable (Server Settings → Enable Community)"}\n` +
           `**Onboarding:** ${onboardOk ? "✅ Configured with 3 prompts!" : communityOk ? "⚠️ Use \`!onboard\` to retry" : "⚠️ Enable Community mode first, then use \`!onboard\`"}\n\n` +
           `**Your channel** was preserved and moved to General ✿\n\n` +
