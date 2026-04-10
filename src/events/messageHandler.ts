@@ -1,5 +1,5 @@
 import { type Message, Events, type Client } from "discord.js";
-import { handleModeration } from "../commands/moderation.js";
+import { handleModeration, registerJailButtons } from "../commands/moderation.js";
 import { handleSetup, handleOnboard } from "../commands/setup.js";
 import { handleUtility, sniped, editSniped } from "../commands/utility.js";
 import { handleFun } from "../commands/fun.js";
@@ -9,12 +9,14 @@ import { handleGiveaway } from "../commands/giveaway.js";
 import { handleExtras, handleAfkCheck, handleStarboard } from "../commands/extras.js";
 import { handleSelfRoles, registerSelfRoleReactions } from "../commands/selfroles.js";
 import { handleQuestions, registerQuestionButtons } from "../commands/questions.js";
+import { handleEvents } from "../commands/events.js";
+import { handleRoles, registerAutoRole } from "../commands/roles.js";
 import { get, defaultSettings, type GuildSettings } from "../data/storage.js";
 
 const MOD_COMMANDS = new Set([
   "ban", "kick", "mute", "unmute", "timeout", "warn", "warnings",
   "clearwarns", "clear", "purge", "slowmode", "lock", "unlock",
-  "nick", "jail", "unjail", "nuke",
+  "nick", "jail", "unjail", "jailsetup", "jaillist", "nuke",
   "hardban", "hardfuck",
 ]);
 
@@ -49,6 +51,10 @@ const SELFROLE_COMMANDS = new Set(["selfrole", "setrolespanel", "refreshroles"])
 
 const QUESTION_COMMANDS = new Set(["questionpanel", "addq", "removeq", "qlist", "autosetup"]);
 
+const EVENT_COMMANDS = new Set(["event", "announce", "seteventchannel", "setannouncechannel"]);
+
+const ROLE_COMMANDS = new Set(["autorole", "giverole", "takerole", "roles"]);
+
 const EXTRAS_COMMANDS = new Set([
   "afk", "remind", "reminder",
   "ticket",
@@ -72,6 +78,8 @@ const LEADERBOARD_COMMANDS = new Set(["leaderboard", "lb"]);
 export function registerMessageHandlers(client: Client) {
   registerSelfRoleReactions(client);
   registerQuestionButtons(client);
+  registerJailButtons(client);
+  registerAutoRole(client);
 
   client.on(Events.MessageCreate, async (message: Message) => {
     if (message.author.bot || !message.guild) return;
@@ -114,6 +122,10 @@ export function registerMessageHandlers(client: Client) {
         await handleSelfRoles(cmd, message, args);
       } else if (QUESTION_COMMANDS.has(cmd)) {
         await handleQuestions(cmd, message, args);
+      } else if (EVENT_COMMANDS.has(cmd)) {
+        await handleEvents(cmd, message, args);
+      } else if (ROLE_COMMANDS.has(cmd)) {
+        await handleRoles(cmd, message, args);
       } else if (EXTRAS_COMMANDS.has(cmd)) {
         await handleExtras(cmd, message, args);
       }
