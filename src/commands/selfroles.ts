@@ -63,7 +63,6 @@ export async function refreshSelfRolePanel(client: Client, guildId: string) {
     const existing = await (ch as any).messages.fetch(panel.messageId).catch(() => null);
     if (existing) {
       await existing.edit({ embeds: [embed] });
-      // Re-add all reactions
       await existing.reactions.removeAll().catch(() => {});
       for (const r of panel.roles) {
         await existing.react(r.emoji).catch(() => {});
@@ -152,6 +151,14 @@ export async function handleSelfRoles(cmd: string, message: Message, args: strin
     if (!isAdmin) return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Admin only!")] });
     await refreshSelfRolePanel(message.client, gid);
     return message.reply({ embeds: [aesthetic("✅ Panel Refreshed!", "The self-roles panel has been updated.", COLORS.success)] });
+  }
+
+  if (cmd === "setrolespanel") {
+    if (!isAdmin) return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Admin only!")] });
+    const channel = message.mentions.channels.first() ?? message.channel;
+    const msgId = await postSelfRolePanel(message.client, gid, channel.id);
+    if (!msgId) return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Failed to post panel. Make sure I have permission to send messages there!")] });
+    return message.reply({ embeds: [aesthetic("✅ Panel Posted!", `Self-roles panel has been posted in <#${channel.id}>!`, COLORS.success)] });
   }
 
   if (cmd === "selfrole") {
