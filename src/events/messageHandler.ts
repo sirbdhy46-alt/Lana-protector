@@ -10,7 +10,7 @@ import { handleExtras, handleAfkCheck, handleStarboard } from "../commands/extra
 import { handleSelfRoles, registerSelfRoleReactions } from "../commands/selfroles.js";
 import { handleQuestions, registerQuestionButtons } from "../commands/questions.js";
 import { handleEvents } from "../commands/events.js";
-import { handleRoles, registerAutoRole } from "../commands/roles.js";
+import { handleRoles } from "../commands/roles.js";
 import { get, defaultSettings, type GuildSettings } from "../data/storage.js";
 
 const MOD_COMMANDS = new Set([
@@ -53,7 +53,7 @@ const QUESTION_COMMANDS = new Set(["questionpanel", "addq", "removeq", "qlist", 
 
 const EVENT_COMMANDS = new Set(["event", "announce", "seteventchannel", "setannouncechannel"]);
 
-const ROLE_COMMANDS = new Set(["autorole", "giverole", "takerole", "roles"]);
+const ROLE_COMMANDS = new Set(["giverole", "takerole", "roles"]);
 
 const EXTRAS_COMMANDS = new Set([
   "afk", "remind", "reminder",
@@ -79,7 +79,6 @@ export function registerMessageHandlers(client: Client) {
   registerSelfRoleReactions(client);
   registerQuestionButtons(client);
   registerJailButtons(client);
-  registerAutoRole(client);
 
   client.on(Events.MessageCreate, async (message: Message) => {
     if (message.author.bot || !message.guild) return;
