@@ -161,7 +161,7 @@ export async function handleSelfRoles(cmd: string, message: Message, args: strin
       if (!isAdmin) return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Admin only!")] });
       const role = message.mentions.roles.first();
       const emoji = args[2];
-      const desc = args.slice(3).join(" ") || role?.name ?? "Self Role";
+      const desc = (args.slice(3).join(" ") || role?.name) ?? "Self Role";
       if (!role || !emoji)
         return message.reply({ embeds: [base(COLORS.error).setDescription("❌ Usage: `!selfrole add @role emoji description`")] });
 
