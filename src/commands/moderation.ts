@@ -54,12 +54,14 @@ function logAction(
 }
 
 function checkRoleHierarchy(message: Message, target: any): string | null {
-  const botMember = message.guild?.members.me;
-  if (!botMember) return "❌ I can't find myself in this server!";
-  if (target.id === message.guild?.ownerId)
+  if (!message.guild) return null;
+  if (target.id === message.guild.ownerId)
     return "❌ I can't perform actions on the server owner!";
-  if (target.roles.highest.position >= botMember.roles.highest.position)
-    return "❌ I can't do that — their role is equal to or higher than mine! Move my role above theirs in Server Settings → Roles.";
+  const botMember = message.guild.members.me;
+  if (!botMember) return null;
+  // Only block if target has a role HIGHER than the bot's highest role
+  if (target.roles.highest.position > botMember.roles.highest.position)
+    return "❌ Their role is higher than mine. Move my role above theirs in Server Settings → Roles.";
   return null;
 }
 
@@ -403,14 +405,23 @@ export async function handleModeration(
         });
       const reason = args.slice(1).join(" ") || "No reason";
       const settings = get<GuildSettings>(gKey(message.guildId!), "data", defaultSettings);
-      if (!settings.jailedRole)
-        return message.reply({
-          embeds: [base(COLORS.error).setDescription("❌ No jailed role set! Run `!setup` first.")],
-        });
-      const jailRole = message.guild.roles.cache.get(settings.jailedRole);
+      let jailRole = settings.jailedRole
+        ? message.guild.roles.cache.get(settings.jailedRole)
+        : message.guild.roles.cache.find((r) => r.name.toLowerCase().includes("jail"));
+      if (!jailRole) {
+        jailRole = await message.guild.roles.create({
+          name: "🔒 Jailed",
+          color: "#7f8c8d",
+          permissions: [],
+          reason: "Auto-created by Lana bot for jail command",
+        }).catch(() => undefined) ?? undefined;
+        if (jailRole) {
+          set(gKey(message.guildId!), "data", { ...settings, jailedRole: jailRole.id });
+        }
+      }
       if (!jailRole)
         return message.reply({
-          embeds: [base(COLORS.error).setDescription("❌ Jailed role not found in this server!")],
+          embeds: [base(COLORS.error).setDescription("❌ Could not find or create a jailed role. Please give me **Manage Roles** permission.")],
         });
       const jailErr = await target.roles.add(jailRole).catch((e: any) => e);
       if (jailErr instanceof Error) {
