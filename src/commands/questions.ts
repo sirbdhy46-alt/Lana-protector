@@ -9,7 +9,6 @@ import {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
-  PermissionsBitField,
 } from "discord.js";
 import { base, aesthetic, COLORS, rand, CUTE } from "../utils/embeds.js";
 import { get, set } from "../data/storage.js";
