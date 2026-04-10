@@ -271,12 +271,28 @@ export function registerQuestionButtons(client: Client) {
 
     if (btn.customId.startsWith("qcat:")) {
       const catName = btn.customId.slice(5);
-      const category = data.categories.find(c => c.name.toLowerCase() === catName);
+      let category = data.categories.find(c => c.name.toLowerCase() === catName);
 
       if (!category) { await btn.reply({ content: "❌ Category not found.", ephemeral: true }); return; }
+
+      // Auto-heal: if options are empty, scan the guild for matching preset roles
       if (category.options.length === 0) {
-        await btn.reply({ content: `> ❌ **${category.name}** has no roles yet. Ask an admin!`, ephemeral: true });
-        return;
+        const presetsForCat = PRESETS.filter(p => p.category === catName);
+        const recovered: QuestionOption[] = [];
+        for (const preset of presetsForCat) {
+          const discordRole = interaction.guild!.roles.cache.find(r => r.name === preset.label);
+          if (discordRole) recovered.push({ roleId: discordRole.id, emoji: preset.fallbackEmoji, label: preset.label });
+        }
+        if (recovered.length > 0) {
+          const updatedCats = data.categories.map(c =>
+            c.name.toLowerCase() === catName ? { ...c, options: recovered } : c
+          );
+          set(dataKey(guildId), "data", { ...data, categories: updatedCats });
+          category = updatedCats.find(c => c.name.toLowerCase() === catName)!;
+        } else {
+          await btn.reply({ content: `> ❌ **${category.name}** has no roles yet. Ask an admin to run \`!autosetup\`!`, ephemeral: true });
+          return;
+        }
       }
 
       const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
