@@ -8,6 +8,7 @@ import { handleLeveling, handleXp } from "../commands/leveling.js";
 import { handleGiveaway } from "../commands/giveaway.js";
 import { handleExtras, handleAfkCheck, handleStarboard } from "../commands/extras.js";
 import { handleSelfRoles, registerSelfRoleReactions } from "../commands/selfroles.js";
+import { handleQuestions, registerQuestionButtons } from "../commands/questions.js";
 import { get, defaultSettings, type GuildSettings } from "../data/storage.js";
 
 const MOD_COMMANDS = new Set([
@@ -46,6 +47,8 @@ const GIVEAWAY_COMMANDS = new Set(["gstart", "gend", "greroll"]);
 
 const SELFROLE_COMMANDS = new Set(["selfrole", "setrolespanel", "refreshroles"]);
 
+const QUESTION_COMMANDS = new Set(["questionpanel", "addq", "removeq", "qlist", "autosetup"]);
+
 const EXTRAS_COMMANDS = new Set([
   "afk", "remind", "reminder",
   "ticket",
@@ -68,6 +71,7 @@ const LEADERBOARD_COMMANDS = new Set(["leaderboard", "lb"]);
 
 export function registerMessageHandlers(client: Client) {
   registerSelfRoleReactions(client);
+  registerQuestionButtons(client);
 
   client.on(Events.MessageCreate, async (message: Message) => {
     if (message.author.bot || !message.guild) return;
@@ -108,6 +112,8 @@ export function registerMessageHandlers(client: Client) {
         await handleGiveaway(cmd, message, args);
       } else if (SELFROLE_COMMANDS.has(cmd)) {
         await handleSelfRoles(cmd, message, args);
+      } else if (QUESTION_COMMANDS.has(cmd)) {
+        await handleQuestions(cmd, message, args);
       } else if (EXTRAS_COMMANDS.has(cmd)) {
         await handleExtras(cmd, message, args);
       }
